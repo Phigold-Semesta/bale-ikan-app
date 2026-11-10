@@ -82,7 +82,16 @@ class Sidebar extends StatelessWidget {
       context: context,
       applicationName: 'Bale Ikan',
       applicationVersion: '1.0.0',
-      applicationIcon: const Icon(Icons.set_meal, color: primarySeafoam, size: 40),
+      applicationIcon: ClipOval(
+        child: Image.asset(
+          'assets/logo/bale_ikan_logo.png',
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.set_meal, color: primarySeafoam, size: 40),
+        ),
+      ),
       children: const [
         SizedBox(height: 12),
         Text('Aplikasi katalog dan pemesanan ikan segar air tawar dan ikan laut.'),
@@ -233,10 +242,18 @@ class Sidebar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(3),
             decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const CircleAvatar(
-              radius: 30,
-              backgroundColor: Color(0xFFE6F7F5),
-              child: Icon(Icons.set_meal, color: primarySeafoam, size: 32),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/logo/bale_ikan_logo.png',
+                width: 68,
+                height: 68,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Color(0xFFE6F7F5),
+                  child: Icon(Icons.set_meal, color: primarySeafoam, size: 32),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 14),

@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
 
 final Dio dio = Dio(BaseOptions(
-    baseUrl: 'https://63588b60c27556d2893f7a12.mockapi.io/',
+    // GANTI URL DI BAWAH INI DENGAN API ENDPOINT MOCKAPI ANDA SENDIRI
+    baseUrl: 'https://63588b60c27556d2893f7a12.mockapi.io/', 
     connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 3)));
+    receiveTimeout: const Duration(seconds: 5)));
 
 class ApiClient {
   Future<Response> get(String path) async {
