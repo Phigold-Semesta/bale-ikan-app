@@ -55,7 +55,7 @@ class Sidebar extends StatelessWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.phone_outlined, color: primarySeafoam),
-              title: Text('+62 812-0000-0000'),
+              title: Text('+62 858-1132-5030'),
               subtitle: Text('Layanan pelanggan (08.00 - 17.00)'),
             ),
             ListTile(
