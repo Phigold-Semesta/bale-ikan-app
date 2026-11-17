@@ -31,6 +31,11 @@ STATE = {
     "profile_images": {}
 }
 
+# Gunakan ThreadingMixIn agar ratusan request dari 3 HP dan Ngrok tidak pernah macet/offline
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
 class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
@@ -38,7 +43,8 @@ class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
     def _set_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning')
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -80,12 +86,12 @@ class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
         elif parsed.path == '/api/images/product':
             nama = body.get("nama")
             img = body.get("base64")
-            if nama and img:
+            if nama is not None and img is not None:
                 STATE["product_images"][nama] = img
         elif parsed.path == '/api/images/profile':
             role = body.get("role")
             img = body.get("base64")
-            if role and img:
+            if role is not None and img is not None:
                 STATE["profile_images"][role] = img
 
         self.send_response(200)
@@ -95,7 +101,6 @@ class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
 
 if __name__ == "__main__":
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), BaleIkanHandler) as httpd:
-        print(f"Server Real-Time Bale Ikan aktif di http://localhost:{PORT}")
+    with ThreadingHTTPServer(("", PORT), BaleIkanHandler) as httpd:
+        print(f"Server Multi-Thread Bale Ikan aktif di http://localhost:{PORT}")
         httpd.serve_forever()
