@@ -26,7 +26,9 @@ STATE = {
             "kurirLng": 107.2935,
             "waktu": "Hari ini, 10:30"
         }
-    ]
+    ],
+    "product_images": {},
+    "profile_images": {}
 }
 
 class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
@@ -51,6 +53,15 @@ class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
             self._set_cors_headers()
             self.end_headers()
             self.wfile.write(json.dumps(STATE["orders"]).encode('utf-8'))
+        elif parsed.path == '/api/images':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self._set_cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "product_images": STATE["product_images"],
+                "profile_images": STATE["profile_images"]
+            }).encode('utf-8'))
         else:
             super().do_GET()
 
@@ -66,12 +77,22 @@ class BaleIkanHandler(http.server.SimpleHTTPRequestHandler):
                 if o["id"] == body.get("id"):
                     o.update(body)
                     break
+        elif parsed.path == '/api/images/product':
+            nama = body.get("nama")
+            img = body.get("base64")
+            if nama and img:
+                STATE["product_images"][nama] = img
+        elif parsed.path == '/api/images/profile':
+            role = body.get("role")
+            img = body.get("base64")
+            if role and img:
+                STATE["profile_images"][role] = img
 
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self._set_cors_headers()
         self.end_headers()
-        self.wfile.write(json.dumps({"ok": True, "orders": STATE["orders"]}).encode('utf-8'))
+        self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
 
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True

@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import '../../service/realtime_sync_service.dart';
 import 'customer_produk_detail.dart';
 
 class ItemKatalogCustomer {
@@ -199,22 +201,27 @@ class _CustomerKatalogState extends State<CustomerKatalog> {
   Widget build(BuildContext context) {
     final daftar = _hasilFilter;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSearchBar(),
-          const SizedBox(height: 20),
-          _buildBannerPromo(),
-          const SizedBox(height: 24),
-          _buildHeaderKatalog(),
-          const SizedBox(height: 12),
-          _buildFilterKategori(),
-          const SizedBox(height: 16),
-          if (daftar.isEmpty) _buildKosong() else _buildGrid(daftar),
-        ],
-      ),
+    return ListenableBuilder(
+      listenable: RealtimeSyncService.instance,
+      builder: (context, _) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSearchBar(),
+              const SizedBox(height: 20),
+              _buildBannerPromo(),
+              const SizedBox(height: 24),
+              _buildHeaderKatalog(),
+              const SizedBox(height: 12),
+              _buildFilterKategori(),
+              const SizedBox(height: 16),
+              if (daftar.isEmpty) _buildKosong() else _buildGrid(daftar),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -389,6 +396,7 @@ class _CustomerKatalogState extends State<CustomerKatalog> {
 
   Widget _buildKartuIkan(ItemKatalogCustomer item) {
     final difavoritkan = widget.favorit.contains(item.nama);
+    final Uint8List? fotoProduk = RealtimeSyncService.instance.getFotoProduk(item.nama);
 
     return GestureDetector(
       onTap: () => _bukaDetailProduk(item),
@@ -403,7 +411,7 @@ class _CustomerKatalogState extends State<CustomerKatalog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bagian ikon produk + tombol favorit (Sama persis dengan Admin)
+            // Menampilkan Gambar Katalog yang Diunggah Admin secara Otomatis
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -412,8 +420,15 @@ class _CustomerKatalogState extends State<CustomerKatalog> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    Center(child: Icon(item.ikon, size: 50, color: primarySeafoam)),
+                    if (fotoProduk != null)
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        child: Image.memory(fotoProduk, fit: BoxFit.cover),
+                      )
+                    else
+                      Center(child: Icon(item.ikon, size: 50, color: primarySeafoam)),
                     Positioned(
                       top: 8,
                       right: 8,
@@ -424,6 +439,7 @@ class _CustomerKatalogState extends State<CustomerKatalog> {
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
                           ),
                           child: Icon(
                             difavoritkan ? Icons.favorite : Icons.favorite_border,
@@ -437,7 +453,6 @@ class _CustomerKatalogState extends State<CustomerKatalog> {
                 ),
               ),
             ),
-            // Bagian deskripsi, penjual Karawang, harga & ikon + keranjang
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(

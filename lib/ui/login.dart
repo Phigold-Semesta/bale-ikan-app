@@ -460,7 +460,7 @@ class LoginState extends State<Login> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: _sedangMasuk ? null : () => _masukPintasanAktor('kurir', 'kurir'),
-                icon: const Icon(Icons.delivery_dining_outlined, size: 16),
+                icon: const Icon(Icons.local_shipping_outlined, size: 16),
                 label: const Text('Kurir', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
               ),
             ),

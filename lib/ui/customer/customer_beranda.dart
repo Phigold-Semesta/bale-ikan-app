@@ -65,6 +65,69 @@ class _CustomerBerandaState extends State<CustomerBeranda> {
     });
   }
 
+  void _tampilkanBantuan(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Bantuan & Kontak',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+            ),
+            const SizedBox(height: 12),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.phone_outlined, color: primarySeafoam),
+              title: Text('+62 858-1132-5030'),
+              subtitle: Text('Layanan pelanggan (08.00 - 17.00)'),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.email_outlined, color: primarySeafoam),
+              title: Text('admin@baleikan.com'),
+              subtitle: Text('Email pertanyaan & pesanan'),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.location_on_outlined, color: primarySeafoam),
+              title: Text('Karawang, Jawa Barat'),
+              subtitle: Text('Lokasi toko Bale Ikan'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _tampilkanTentang(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Bale Ikan',
+      applicationVersion: '1.0.0',
+      applicationIcon: ClipOval(
+        child: Image.asset(
+          'assets/logo/bale_ikan_logo.png',
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.set_meal, color: primarySeafoam, size: 40),
+        ),
+      ),
+      children: const [
+        Text('Aplikasi katalog dan pemesanan ikan segar air tawar dan ikan laut.'),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
@@ -84,93 +147,95 @@ class _CustomerBerandaState extends State<CustomerBeranda> {
       const CustomerProfil(),
     ];
 
-    return Scaffold(
-      backgroundColor: lightBg,
-      drawer: _buildSidebarCustomer(),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        titleSpacing: 0,
-        iconTheme: const IconThemeData(color: darkText),
-        title: Row(
-          children: [
-            ClipOval(
-              child: Image.asset(
-                'assets/logo/bale_ikan_logo.png',
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.set_meal, color: primarySeafoam, size: 28),
+    return SelectionContainer.disabled(
+      child: Scaffold(
+        backgroundColor: lightBg,
+        drawer: _buildSidebarCustomer(context),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+          titleSpacing: 0,
+          iconTheme: const IconThemeData(color: darkText),
+          title: Row(
+            children: [
+              ClipOval(
+                child: Image.asset(
+                  'assets/logo/bale_ikan_logo.png',
+                  width: 36,
+                  height: 36,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.set_meal, color: primarySeafoam, size: 28),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'BALE IKAN',
-              style: TextStyle(
-                color: darkText,
-                fontWeight: FontWeight.w800,
-                fontSize: 19,
-                letterSpacing: 1,
+              const SizedBox(width: 10),
+              const Text(
+                'BALE IKAN',
+                style: TextStyle(
+                  color: darkText,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 19,
+                  letterSpacing: 1,
+                ),
               ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Favorit Saya',
+              icon: Badge(
+                isLabelVisible: _favorit.isNotEmpty,
+                backgroundColor: accentCoral,
+                label: Text('${_favorit.length}'),
+                child: const Icon(Icons.favorite_border, color: accentCoral),
+              ),
+              onPressed: () {
+                setState(() {
+                  _kategoriAktif = 'Favorit';
+                  _selectedIndex = 0;
+                });
+              },
             ),
+            IconButton(
+              tooltip: 'Keranjang Belanja',
+              icon: Badge(
+                isLabelVisible: _keranjang.isNotEmpty,
+                backgroundColor: accentCoral,
+                label: Text('${_keranjang.length}'),
+                child: const Icon(Icons.shopping_cart_outlined, color: primarySeafoam),
+              ),
+              onPressed: () => setState(() => _selectedIndex = 1),
+            ),
+            const SizedBox(width: 4),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Favorit Saya',
-            icon: Badge(
-              isLabelVisible: _favorit.isNotEmpty,
-              backgroundColor: accentCoral,
-              label: Text('${_favorit.length}'),
-              child: const Icon(Icons.favorite_border, color: accentCoral),
+        body: pages[_selectedIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          selectedItemColor: primarySeafoam,
+          unselectedItemColor: Colors.grey,
+          type: BottomNavigationBarType.fixed,
+          onTap: (idx) => setState(() => _selectedIndex = idx),
+          items: [
+            const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
+            BottomNavigationBarItem(
+              icon: Badge(
+                isLabelVisible: _keranjang.isNotEmpty,
+                backgroundColor: accentCoral,
+                label: Text('${_keranjang.length}'),
+                child: const Icon(Icons.shopping_cart_outlined),
+              ),
+              label: 'Keranjang',
             ),
-            onPressed: () {
-              setState(() {
-                _kategoriAktif = 'Favorit';
-                _selectedIndex = 0;
-              });
-            },
-          ),
-          IconButton(
-            tooltip: 'Keranjang Belanja',
-            icon: Badge(
-              isLabelVisible: _keranjang.isNotEmpty,
-              backgroundColor: accentCoral,
-              label: Text('${_keranjang.length}'),
-              child: const Icon(Icons.shopping_cart_outlined, color: primarySeafoam),
-            ),
-            onPressed: () => setState(() => _selectedIndex = 1),
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: primarySeafoam,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (idx) => setState(() => _selectedIndex = idx),
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Beranda'),
-          BottomNavigationBarItem(
-            icon: Badge(
-              isLabelVisible: _keranjang.isNotEmpty,
-              backgroundColor: accentCoral,
-              label: Text('${_keranjang.length}'),
-              child: const Icon(Icons.shopping_cart_outlined),
-            ),
-            label: 'Keranjang',
-          ),
-          const BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), label: 'Riwayat Pesanan'),
-          const BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
-        ],
+            const BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), label: 'Pesanan'),
+            const BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSidebarCustomer() {
+  Widget _buildSidebarCustomer(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.white,
       child: Column(
@@ -280,10 +345,32 @@ class _CustomerBerandaState extends State<CustomerBeranda> {
                     setState(() => _selectedIndex = 2);
                   },
                 ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Text(
+                    'LAINNYA',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1),
+                  ),
+                ),
                 ListTile(
                   leading: const Icon(Icons.support_agent_outlined, color: primarySeafoam),
-                  title: const Text('Bantuan & Kontak', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                  onTap: () => Navigator.pop(context),
+                  title: const Text('Bantuan & Kontak', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: darkText)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _tampilkanBantuan(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline, color: primarySeafoam),
+                  title: const Text('Tentang Aplikasi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: darkText)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _tampilkanTentang(context);
+                  },
                 ),
               ],
             ),

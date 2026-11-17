@@ -27,11 +27,74 @@ class _KurirBerandaState extends State<KurirBeranda> {
     KurirProfil(),
   ];
 
+  void _tampilkanBantuan(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Bantuan & Kontak',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+            ),
+            const SizedBox(height: 12),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.phone_outlined, color: primarySeafoam),
+              title: Text('+62 858-1132-5030'),
+              subtitle: Text('Layanan pelanggan (08.00 - 17.00)'),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.email_outlined, color: primarySeafoam),
+              title: Text('admin@baleikan.com'),
+              subtitle: Text('Email pertanyaan & pesanan'),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.location_on_outlined, color: primarySeafoam),
+              title: Text('Karawang, Jawa Barat'),
+              subtitle: Text('Lokasi toko Bale Ikan'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _tampilkanTentang(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Bale Ikan',
+      applicationVersion: '1.0.0',
+      applicationIcon: ClipOval(
+        child: Image.asset(
+          'assets/logo/bale_ikan_logo.png',
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.set_meal, color: primarySeafoam, size: 40),
+        ),
+      ),
+      children: const [
+        Text('Aplikasi katalog dan pemesanan ikan segar air tawar dan ikan laut.'),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: lightBg,
-      drawer: _buildSidebarKurir(),
+      drawer: _buildSidebarKurir(context),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -46,7 +109,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
                 width: 36,
                 height: 36,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.delivery_dining, color: primarySeafoam, size: 28),
+                errorBuilder: (_, __, ___) => const Icon(Icons.local_shipping_outlined, color: primarySeafoam, size: 28),
               ),
             ),
             const SizedBox(width: 10),
@@ -73,7 +136,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
     );
   }
 
-  Widget _buildSidebarKurir() {
+  Widget _buildSidebarKurir(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.white,
       child: Column(
@@ -100,7 +163,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
                       width: 64,
                       height: 64,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.delivery_dining, size: 50, color: primarySeafoam),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.local_shipping_outlined, size: 50, color: primarySeafoam),
                     ),
                   ),
                 ),
@@ -122,7 +185,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
-                    'Kurir Berpendingin Es',
+                    'Mobil Box Pendingin Es',
                     style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -145,6 +208,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
                   title: Text(
                     'Tugas Pengantaran Aktif',
                     style: TextStyle(
+                      fontSize: 14,
                       fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.w500,
                       color: _selectedIndex == 0 ? primarySeafoam : darkText,
                     ),
@@ -159,6 +223,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
                   title: Text(
                     'Riwayat Selesai Diantar',
                     style: TextStyle(
+                      fontSize: 14,
                       fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.w500,
                       color: _selectedIndex == 1 ? primarySeafoam : darkText,
                     ),
@@ -173,6 +238,7 @@ class _KurirBerandaState extends State<KurirBeranda> {
                   title: Text(
                     'Profil & Armada Kurir',
                     style: TextStyle(
+                      fontSize: 14,
                       fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.w500,
                       color: _selectedIndex == 2 ? primarySeafoam : darkText,
                     ),
@@ -180,6 +246,33 @@ class _KurirBerandaState extends State<KurirBeranda> {
                   onTap: () {
                     Navigator.pop(context);
                     setState(() => _selectedIndex = 2);
+                  },
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Text(
+                    'LAINNYA',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.support_agent_outlined, color: primarySeafoam),
+                  title: const Text('Bantuan & Kontak', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: darkText)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _tampilkanBantuan(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline, color: primarySeafoam),
+                  title: const Text('Tentang Aplikasi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: darkText)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _tampilkanTentang(context);
                   },
                 ),
               ],

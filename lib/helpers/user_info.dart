@@ -46,8 +46,12 @@ class UserInfo {
     return pref.getString(ROLE);
   }
 
+  /// Hanya menghapus sesi login agar Foto Profil & Foto Katalog Produk TERSIMPAN PERMANEN
   Future<void> logout() async {
     final SharedPreferences pref = await SharedPreferences.getInstance();
-    await pref.clear();
+    await pref.remove(TOKEN);
+    await pref.remove(USER_ID);
+    await pref.remove(USERNAME);
+    await pref.remove(ROLE);
   }
 }

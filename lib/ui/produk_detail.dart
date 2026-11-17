@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // Ditambahkan untuk pengecekan platform web
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Ditambahkan untuk akses folder/galeri
+import 'package:shared_preferences/shared_preferences.dart';
 import '../model/produk_ikan.dart';
 import '../service/produk_service.dart';
+import '../service/realtime_sync_service.dart';
 import 'produk_page.dart';
 import 'produk_update_form.dart';
 import 'beranda.dart'; // Ditambahkan untuk navigasi hapus data
@@ -116,12 +119,14 @@ class _ProdukDetailState extends State<ProdukDetail> {
                 subtitle: const Text('Pilih file dari laptop/komputer Anda'),
                 onTap: () async {
                   final ImagePicker picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                  
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
                   if (image != null) {
+                    final Uint8List bytes = await image.readAsBytes();
                     Navigator.pop(modalContext);
                     await ProdukService().updateGambar(widget.produk.id!, image.path);
-                    
+                    await RealtimeSyncService.instance.simpanFotoProduk(widget.produk.namaIkan, bytes);
+
                     if (context.mounted) {
                       setState(() {});
                     }
@@ -141,7 +146,9 @@ class _ProdukDetailState extends State<ProdukDetail> {
                 onTap: () async {
                   Navigator.pop(modalContext);
                   await ProdukService().updateGambar(widget.produk.id!, null);
-                  
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('foto_ikan_${widget.produk.namaIkan}');
+
                   if (context.mounted) {
                     setState(() {});
                   }
@@ -171,44 +178,60 @@ class _ProdukDetailState extends State<ProdukDetail> {
         ),
         centerTitle: true,
       ),
-      body: StreamBuilder<ProdukIkan>(
-        stream: getData(),
-        builder: (context, AsyncSnapshot<ProdukIkan> snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text(snapshot.error.toString(), style: const TextStyle(color: accentCoral)));
-          }
-          if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primarySeafoam)));
-          }
-          if (!snapshot.hasData && snapshot.connectionState == ConnectionState.done) {
-            return const Center(child: Text('Data Tidak Ditemukan', style: TextStyle(color: darkText)));
-          }
+      body: ListenableBuilder(
+        listenable: RealtimeSyncService.instance,
+        builder: (context, _) {
+          return StreamBuilder<ProdukIkan>(
+            stream: getData(),
+            builder: (context, AsyncSnapshot<ProdukIkan> snapshot) {
+              if (snapshot.hasError) {
+                return Center(child: Text(snapshot.error.toString(), style: const TextStyle(color: accentCoral)));
+              }
+              if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primarySeafoam)));
+              }
+              if (!snapshot.hasData && snapshot.connectionState == ConnectionState.done) {
+                return const Center(child: Text('Data Tidak Ditemukan', style: TextStyle(color: darkText)));
+              }
 
-          final data = snapshot.data!;
+              final data = snapshot.data!;
+              final Uint8List? syncBytes = RealtimeSyncService.instance.getFotoProduk(data.namaIkan);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
-                // Card Detail Utama
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4)),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // LOGIKA GAMBAR DENGAN TOMBOL UPLOAD DI POJOKNYA
-                      Stack(
-                        clipBehavior: Clip.none,
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    // Card Detail Utama
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
                         children: [
-                          data.gambar != null
-                              ? Container(
+                          // LOGIKA GAMBAR DENGAN TOMBOL UPLOAD DI POJOKNYA
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              if (syncBytes != null)
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 4))],
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.memory(syncBytes, fit: BoxFit.cover),
+                                  ),
+                                )
+                              else if (data.gambar != null)
+                                Container(
                                   width: 100,
                                   height: 100,
                                   decoration: const BoxDecoration(
@@ -221,7 +244,8 @@ class _ProdukDetailState extends State<ProdukDetail> {
                                         : Image.file(File(data.gambar!), fit: BoxFit.cover),
                                   ),
                                 )
-                              : Container(
+                              else
+                                Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
                                     color: primarySeafoam.withOpacity(0.1),
@@ -229,87 +253,89 @@ class _ProdukDetailState extends State<ProdukDetail> {
                                   ),
                                   child: Icon(_getIcon(data.kategori), size: 60, color: primarySeafoam),
                                 ),
-                          
-                          // Tombol Edit/Upload Gambar Mini
-                          Positioned(
-                            bottom: 0,
-                            right: -10,
-                            child: GestureDetector(
-                              onTap: () => _tampilkanModalGambar(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: accentCoral,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                  boxShadow: const [BoxShadow(color: Color(0x2A000000), blurRadius: 4, offset: Offset(0, 2))],
+
+                              // Tombol Edit/Upload Gambar Mini
+                              Positioned(
+                                bottom: 0,
+                                right: -10,
+                                child: GestureDetector(
+                                  onTap: () => _tampilkanModalGambar(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: accentCoral,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                      boxShadow: const [BoxShadow(color: Color(0x2A000000), blurRadius: 4, offset: Offset(0, 2))],
+                                    ),
+                                    child: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
+                                  ),
                                 ),
-                                child: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Nama & Kategori
-                      Text(
-                        data.kategori.toUpperCase(),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primarySeafoam, letterSpacing: 1),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        data.namaIkan,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText),
-                      ),
-                      
-                      const Divider(height: 40, thickness: 1, color: Color(0xFFEEEEEE)),
-                      
-                      // Harga & Stok
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              Text('Harga per Kg', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Rp ${data.harga}',
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: accentCoral),
                               ),
                             ],
                           ),
-                          Container(width: 1, height: 40, color: const Color(0xFFEEEEEE)),
-                          Column(
+
+                          const SizedBox(height: 20),
+
+                          // Nama & Kategori
+                          Text(
+                            data.kategori.toUpperCase(),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primarySeafoam, letterSpacing: 1),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            data.namaIkan,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText),
+                          ),
+
+                          const Divider(height: 40, thickness: 1, color: Color(0xFFEEEEEE)),
+
+                          // Harga & Stok
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              Text('Sisa Stok', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${data.stok} kg',
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+                              Column(
+                                children: [
+                                  Text('Harga per Kg', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Rp ${data.harga}',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: accentCoral),
+                                  ),
+                                ],
+                              ),
+                              Container(width: 1, height: 40, color: const Color(0xFFEEEEEE)),
+                              Column(
+                                children: [
+                                  Text('Sisa Stok', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${data.stok} kg',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Tombol Aksi
-                Row(
-                  children: [
-                    Expanded(child: _tombolUbah()),
-                    const SizedBox(width: 16),
-                    Expanded(child: _tombolHapus()),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // Tombol Aksi
+                    Row(
+                      children: [
+                        Expanded(child: _tombolUbah()),
+                        const SizedBox(width: 16),
+                        Expanded(child: _tombolHapus()),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -362,7 +388,7 @@ class _ProdukDetailState extends State<ProdukDetail> {
         // Modal Konfirmasi Hapus yang Elegan
         showDialog(
           context: context,
-          builder: (BuildContext dialogContext) { 
+          builder: (BuildContext dialogContext) {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: const Row(
@@ -392,10 +418,9 @@ class _ProdukDetailState extends State<ProdukDetail> {
                   onPressed: () async {
                     // 1. Langsung tutup dialog konfirmasi seketika agar UI terasa super mulus
                     Navigator.pop(dialogContext);
-                    
+
                     // 2. Eksekusi hapus data menggunakan widget.produk (sumber data yang aman)
                     await ProdukService().hapus(widget.produk).then((value) {
-                      
                       // 3. Setelah berhasil dihapus, munculkan SweetAlert Sukses!
                       if (mounted) {
                         _tampilkanAlertSukses(context);

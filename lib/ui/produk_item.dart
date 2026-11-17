@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // Untuk mengecek Web / Desktop (kIsWeb)
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Package untuk buka folder laptop/HP
+import 'package:shared_preferences/shared_preferences.dart';
 import '../model/produk_ikan.dart';
 import '../service/produk_service.dart';
+import '../service/realtime_sync_service.dart';
 import 'beranda.dart';
 import 'produk_detail.dart';
 
@@ -107,15 +110,17 @@ class ProdukItem extends StatelessWidget {
                 subtitle: const Text('Pilih file dari laptop/komputer Anda'),
                 onTap: () async {
                   final ImagePicker picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                  
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
                   if (image != null) {
+                    final Uint8List bytes = await image.readAsBytes();
                     Navigator.pop(modalContext); // Tutup modal
                     await ProdukService().updateGambar(produk.id!, image.path);
-                    
+                    await RealtimeSyncService.instance.simpanFotoProduk(produk.namaIkan, bytes);
+
                     if (context.mounted) {
-                       // Tampilkan SweetAlert
-                       _tampilkanAlertSukses(context, "Gambar produk berhasil diunggah dan disimpan.");
+                      // Tampilkan SweetAlert
+                      _tampilkanAlertSukses(context, "Gambar produk berhasil diunggah dan disimpan.");
                     }
                   }
                 },
@@ -133,7 +138,9 @@ class ProdukItem extends StatelessWidget {
                 onTap: () async {
                   Navigator.pop(modalContext); // Tutup modal
                   await ProdukService().updateGambar(produk.id!, null);
-                  
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('foto_ikan_${produk.namaIkan}');
+
                   if (context.mounted) {
                     // Tampilkan SweetAlert (menggunakan style sukses tapi bisa disesuaikan pesannya)
                     _tampilkanAlertSukses(context, "Gambar produk berhasil dihapus.");
@@ -149,98 +156,116 @@ class ProdukItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => ProdukDetail(produk: produk)));
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 3))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: lightBg,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: Stack(
-                  children: [
-                    // LOGIKA RENDER GAMBAR JENIUS
-                    produk.gambar != null
-                        ? ClipRRect(
+    return ListenableBuilder(
+      listenable: RealtimeSyncService.instance,
+      builder: (context, _) {
+        final Uint8List? syncBytes = RealtimeSyncService.instance.getFotoProduk(produk.namaIkan);
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ProdukDetail(produk: produk)));
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 3))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: lightBg,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: Stack(
+                      children: [
+                        // LOGIKA RENDER GAMBAR JENIUS (Mendukung Memori Permanen, Web, & File)
+                        if (syncBytes != null)
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            child: Image.memory(
+                              syncBytes,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                          )
+                        else if (produk.gambar != null)
+                          ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                             child: kIsWeb
                                 ? Image.network(produk.gambar!, fit: BoxFit.cover, width: double.infinity, height: double.infinity)
                                 : Image.file(File(produk.gambar!), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
                           )
-                        : Center(child: Icon(_getIcon(), size: 50, color: primarySeafoam)),
-                    
-                    // Tombol Love Favorit
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: onToggleFavorit,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: Icon(
-                            isFavorit ? Icons.favorite : Icons.favorite_border,
-                            size: 16,
-                            color: accentCoral,
+                        else
+                          Center(child: Icon(_getIcon(), size: 50, color: primarySeafoam)),
+
+                        // Tombol Love Favorit
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: onToggleFavorit,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                              child: Icon(
+                                isFavorit ? Icons.favorite : Icons.favorite_border,
+                                size: 16,
+                                color: accentCoral,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(produk.kategori, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primarySeafoam)),
-                  const SizedBox(height: 2),
-                  Text(produk.namaIkan, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('Stok: ${produk.stok} kg', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          'Rp ${produk.harga}',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: accentCoral),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      // Tombol pemicu Modal Unggah/Hapus Gambar
-                      InkWell(
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: () => _tampilkanModalGambar(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(color: primarySeafoam, borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
-                        ),
+                      Text(produk.kategori, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primarySeafoam)),
+                      const SizedBox(height: 2),
+                      Text(produk.namaIkan, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text('Stok: ${produk.stok} kg', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Rp ${produk.harga}',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: accentCoral),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Tombol pemicu Modal Unggah/Hapus Gambar
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => _tampilkanModalGambar(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: primarySeafoam, borderRadius: BorderRadius.circular(8)),
+                              child: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

@@ -89,10 +89,10 @@ class LiveMapPage extends StatelessWidget {
                         ),
                         Marker(
                           point: titikKurir,
-                          width: 125,
+                          width: 130,
                           height: 70,
                           child: _markerItem(
-                            ikon: Icons.delivery_dining,
+                            ikon: Icons.local_shipping, // Ikon Mobil Box Pengiriman
                             warna: darkText,
                             teks: 'Kurir Pendingin',
                           ),
@@ -156,8 +156,8 @@ class LiveMapPage extends StatelessWidget {
                               onPressed: () {
                                 RealtimeSyncService.instance.gerakkanKurirMendekatiCustomer(pesanan.id);
                               },
-                              icon: const Icon(Icons.navigation),
-                              label: const Text('Majukan Posisi Kurir di Peta'),
+                              icon: const Icon(Icons.local_shipping),
+                              label: const Text('Majukan Mobil Box Kurir di Peta'),
                             ),
                           ),
                         ],

@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../helpers/user_info.dart';
 import '../model/profil_pengguna.dart';
 import '../service/profil_service.dart';
+import '../service/realtime_sync_service.dart';
 import 'login.dart';
 
 class ProfilPage extends StatefulWidget {
@@ -19,9 +21,26 @@ class _ProfilPageState extends State<ProfilPage> {
   static const Color lightBg = Color(0xFFF8F9FA);
   static const Color darkText = Color(0xFF2B2D42);
 
+  // Menyimpan cache stream & profil agar tidak pernah berkedip loading ulang
+  late Stream<ProfilPengguna> _profilStream;
+  ProfilPengguna? _cachedProfil;
+
+  @override
+  void initState() {
+    super.initState();
+    _profilStream = _getProfilStream();
+  }
+
+  void _refreshProfil() {
+    setState(() {
+      _profilStream = _getProfilStream();
+    });
+  }
+
   // Menarik data dari ProfilService
   Stream<ProfilPengguna> _getProfilStream() async* {
     ProfilPengguna data = await ProfilService().getProfil();
+    _cachedProfil = data;
     yield data;
   }
 
@@ -92,14 +111,16 @@ class _ProfilPageState extends State<ProfilPage> {
                 subtitle: const Text('Pilih dari laptop/komputer Anda'),
                 onTap: () async {
                   final ImagePicker picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
                   
                   if (image != null) {
+                    final Uint8List bytes = await image.readAsBytes();
                     Navigator.pop(modalContext);
                     await ProfilService().updateGambar(image.path);
+                    await RealtimeSyncService.instance.simpanFotoProfil('admin', bytes);
                     if (mounted) {
-                      setState(() {});
-                      _tampilkanAlertSukses(context, "Foto profil berhasil diunggah.");
+                      _refreshProfil();
+                      _tampilkanAlertSukses(context, "Foto profil berhasil diunggah dan disimpan permanen.");
                     }
                   }
                 },
@@ -116,8 +137,9 @@ class _ProfilPageState extends State<ProfilPage> {
                 onTap: () async {
                   Navigator.pop(modalContext);
                   await ProfilService().updateGambar(null);
+                  await RealtimeSyncService.instance.simpanFotoProfil('admin', Uint8List(0));
                   if (mounted) {
-                    setState(() {});
+                    _refreshProfil();
                     _tampilkanAlertSukses(context, "Foto profil berhasil dihapus.");
                   }
                 },
@@ -176,7 +198,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 await ProfilService().updateProfil(_namaCtrl.text, _emailCtrl.text);
                 if (mounted) {
                   Navigator.pop(dialogContext);
-                  setState(() {});
+                  _refreshProfil();
                   _tampilkanAlertSukses(context, "Informasi profil akun Anda berhasil diperbarui.");
                 }
               },
@@ -223,7 +245,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 await ProfilService().updateAlamat(_alamatCtrl.text);
                 if (mounted) {
                   Navigator.pop(dialogContext);
-                  setState(() {});
+                  _refreshProfil();
                   _tampilkanAlertSukses(context, "Alamat pengiriman berhasil diperbarui.");
                 }
               },
@@ -338,7 +360,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
                     if (mounted) {
                       Navigator.pop(dialogContext);
-                      setState(() {});
+                      _refreshProfil();
                       // Tampilkan SweetAlert sukses
                       _tampilkanAlertSukses(context, "Data username dan kata sandi keamanan berhasil diperbarui.");
                     }
@@ -364,13 +386,14 @@ class _ProfilPageState extends State<ProfilPage> {
         title: const Text('Profil Akun', style: TextStyle(color: darkText, fontWeight: FontWeight.bold, fontSize: 18)),
       ),
       body: StreamBuilder<ProfilPengguna>(
-        stream: _getProfilStream(),
+        stream: _profilStream,
+        initialData: _cachedProfil,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && _cachedProfil == null) {
             return const Center(child: CircularProgressIndicator(color: primarySeafoam));
           }
 
-          final profil = snapshot.data;
+          final profil = snapshot.data ?? _cachedProfil;
           if (profil == null) return const Center(child: Text("Gagal memuat profil"));
 
           return SingleChildScrollView(
@@ -380,48 +403,68 @@ class _ProfilPageState extends State<ProfilPage> {
                 Center(
                   child: Column(
                     children: [
-                      // LOGIKA GAMBAR PROFIL
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          profil.gambar != null
-                              ? Container(
-                                  width: 90,
-                                  height: 90,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 4))],
+                      // ListenableBuilder HANYA membungkus gambar agar layar tidak pernah berkedip loading
+                      ListenableBuilder(
+                        listenable: RealtimeSyncService.instance,
+                        builder: (context, _) {
+                          final Uint8List? syncBytes = RealtimeSyncService.instance.getFotoProfil('admin');
+                          final bool adaSyncBytes = syncBytes != null && syncBytes.isNotEmpty;
+
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              adaSyncBytes
+                                  ? Container(
+                                      width: 90,
+                                      height: 90,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 4))],
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.memory(syncBytes, fit: BoxFit.cover),
+                                      ),
+                                    )
+                                  : profil.gambar != null
+                                      ? Container(
+                                          width: 90,
+                                          height: 90,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 4))],
+                                          ),
+                                          child: ClipOval(
+                                            child: kIsWeb
+                                                ? Image.network(profil.gambar!, fit: BoxFit.cover)
+                                                : Image.file(File(profil.gambar!), fit: BoxFit.cover),
+                                          ),
+                                        )
+                                      : CircleAvatar(
+                                          radius: 45,
+                                          backgroundColor: primarySeafoam.withOpacity(0.15),
+                                          child: const Icon(Icons.person, size: 50, color: primarySeafoam),
+                                        ),
+                              
+                              // Tombol Edit/Upload Foto
+                              Positioned(
+                                bottom: 0,
+                                right: -5,
+                                child: GestureDetector(
+                                  onTap: () => _tampilkanModalGambar(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: accentCoral,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
                                   ),
-                                  child: ClipOval(
-                                    child: kIsWeb
-                                        ? Image.network(profil.gambar!, fit: BoxFit.cover)
-                                        : Image.file(File(profil.gambar!), fit: BoxFit.cover),
-                                  ),
-                                )
-                              : CircleAvatar(
-                                  radius: 45,
-                                  backgroundColor: primarySeafoam.withOpacity(0.15),
-                                  child: const Icon(Icons.person, size: 50, color: primarySeafoam),
                                 ),
-                          
-                          // Tombol Edit/Upload Foto
-                          Positioned(
-                            bottom: 0,
-                            right: -5,
-                            child: GestureDetector(
-                              onTap: () => _tampilkanModalGambar(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: accentCoral,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                ),
-                                child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
                               ),
-                            ),
-                          ),
-                        ],
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       Text(profil.nama, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
@@ -476,12 +519,15 @@ class _ProfilPageState extends State<ProfilPage> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Login()),
-                        (route) => false,
-                      );
+                    onPressed: () async {
+                      await UserInfo().logout();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const Login()),
+                          (route) => false,
+                        );
+                      }
                     },
                     child: const Text('Keluar Akun', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
