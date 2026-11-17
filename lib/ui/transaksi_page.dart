@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../model/pesanan_model.dart';
 import '../model/transaksi.dart';
+import '../service/realtime_sync_service.dart';
 import '../service/transaksi_service.dart';
+import 'live_map_page.dart';
 
 class TransaksiPage extends StatefulWidget {
   const TransaksiPage({super.key});
@@ -27,6 +30,12 @@ class _TransaksiPageState extends State<TransaksiPage> {
       result = result.replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
     }
     return result;
+  }
+
+  // Helper mengekstrak angka dari string harga
+  int _ekstrakAngkaHarga(String teksHarga) {
+    final bersih = teksHarga.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(bersih) ?? 0;
   }
 
   // --- Fungsi Alert Sukses (SweetAlert Style) ---
@@ -87,9 +96,11 @@ class _TransaksiPageState extends State<TransaksiPage> {
             children: [
               Text('Update Status: ${trx.kodeTrx}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
               const SizedBox(height: 8),
-              Text('Ubah status pesanan ini kepada pelanggan.', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              Text('Ubah status pesanan ini kepada pelanggan & kurir.', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               const SizedBox(height: 24),
               _buildOpsiStatus(modalContext, trx, 'Lunas', Icons.check_circle, Colors.green),
+              const Divider(),
+              _buildOpsiStatus(modalContext, trx, 'Siap Dijemput Kurir', Icons.inventory_2, primarySeafoam),
               const Divider(),
               _buildOpsiStatus(modalContext, trx, 'Dikirim', Icons.local_shipping, Colors.orange),
               const Divider(),
@@ -112,6 +123,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
       onTap: () async {
         Navigator.pop(modalContext);
         await TransaksiService().updateStatusTransaksi(trx.kodeTrx, status);
+        await RealtimeSyncService.instance.updateStatusPesanan(trx.kodeTrx, status);
         if (mounted) {
           setState(() {}); // Refresh UI
           _tampilkanAlertSukses("Status transaksi ${trx.kodeTrx} berhasil diubah menjadi $status.");
@@ -124,77 +136,100 @@ class _TransaksiPageState extends State<TransaksiPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: lightBg,
-      body: StreamBuilder<List<Transaksi>>(
-        stream: _getTransaksiStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primarySeafoam));
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text("Gagal memuat transaksi", style: TextStyle(color: darkText)));
-          }
+      body: ListenableBuilder(
+        listenable: RealtimeSyncService.instance,
+        builder: (context, _) {
+          return StreamBuilder<List<Transaksi>>(
+            stream: _getTransaksiStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  RealtimeSyncService.instance.daftarPesanan.isEmpty) {
+                return const Center(child: CircularProgressIndicator(color: primarySeafoam));
+              }
 
-          List<Transaksi> daftarTransaksi = snapshot.data!;
-          
-          // Kalkulasi dinamis untuk header (Menerjemahkan String totalHarga ke int)
-          int totalPendapatan = 0;
-          for (var trx in daftarTransaksi) {
-            totalPendapatan += int.tryParse(trx.totalHarga) ?? 0;
-          }
+              final List<Transaksi> daftarTransaksiApi = snapshot.data ?? [];
+              final List<PesananModel> pesananRealtime = RealtimeSyncService.instance.daftarPesanan;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Riwayat Transaksi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
-                const SizedBox(height: 20),
-                
-                // Card Summary Admin
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: primarySeafoam,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [BoxShadow(color: Color(0x3300A896), blurRadius: 10, offset: Offset(0, 4))],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Total Belanja', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                          const SizedBox(height: 4),
-                          Text('Rp ${_formatRupiah(totalPendapatan)}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('Transaksi', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                          const SizedBox(height: 4),
-                          Text('${daftarTransaksi.length}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ],
+              // Menggabungkan pesanan real-time 3 aktor dengan daftar transaksi
+              final List<Transaksi> daftarTransaksi = [
+                ...pesananRealtime.map(
+                  (p) => Transaksi(
+                    id: p.id,
+                    kodeTrx: p.id,
+                    produkId: p.items,
+                    pelangganId: p.customerNama,
+                    jumlahKg: '1',
+                    totalHarga: _ekstrakAngkaHarga(p.totalHarga).toString(),
+                    statusBayar: p.status,
+                    tanggal: p.waktu,
                   ),
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // List Riwayat Transaksi
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: daftarTransaksi.length,
-                  itemBuilder: (context, index) {
-                    final trx = daftarTransaksi[index];
-                    return _buildKartuTransaksi(trx);
-                  },
+                ...daftarTransaksiApi.where(
+                  (apiTrx) => !pesananRealtime.any((p) => p.id == apiTrx.kodeTrx),
                 ),
-              ],
-            ),
+              ];
+
+              // Kalkulasi dinamis untuk header (Menerjemahkan String totalHarga ke int)
+              int totalPendapatan = 0;
+              for (var trx in daftarTransaksi) {
+                totalPendapatan += int.tryParse(trx.totalHarga) ?? 0;
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Riwayat Transaksi & Pantauan Kurir', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
+                    const SizedBox(height: 20),
+
+                    // Card Summary Admin
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: primarySeafoam,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [BoxShadow(color: Color(0x3300A896), blurRadius: 10, offset: Offset(0, 4))],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Total Belanja', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                              const SizedBox(height: 4),
+                              Text('Rp ${_formatRupiah(totalPendapatan)}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('Transaksi', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                              const SizedBox(height: 4),
+                              Text('${daftarTransaksi.length}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // List Riwayat Transaksi
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: daftarTransaksi.length,
+                      itemBuilder: (context, index) {
+                        final trx = daftarTransaksi[index];
+                        return _buildKartuTransaksi(trx);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
           );
         },
       ),
@@ -207,22 +242,36 @@ class _TransaksiPageState extends State<TransaksiPage> {
     Color textColor = Colors.grey;
     IconData statusIcon = Icons.info_outline;
 
-    if (trx.statusBayar.toLowerCase() == 'lunas') {
+    final statusLower = trx.statusBayar.toLowerCase();
+    if (statusLower == 'lunas' || statusLower.contains('siap')) {
       bgColor = const Color(0xFFE8F5E9);
       textColor = const Color(0xFF2E7D32);
       statusIcon = Icons.check_circle;
-    } else if (trx.statusBayar.toLowerCase() == 'dikirim') {
+    } else if (statusLower == 'dikirim' || statusLower.contains('diantar')) {
       bgColor = const Color(0xFFFFF3E0);
       textColor = const Color(0xFFEF6C00);
       statusIcon = Icons.local_shipping;
-    } else if (trx.statusBayar.toLowerCase() == 'selesai') {
+    } else if (statusLower == 'selesai' || statusLower.contains('tiba')) {
       bgColor = const Color(0xFFE3F2FD);
       textColor = const Color(0xFF1565C0);
       statusIcon = Icons.done_all;
+    } else if (statusLower.contains('menunggu')) {
+      bgColor = const Color(0xFFFFEBEE);
+      textColor = accentCoral;
+      statusIcon = Icons.notifications_active;
     }
 
     // Parsing total harga dari string ke int
     int totalPembayaran = int.tryParse(trx.totalHarga) ?? 0;
+
+    // Cek apakah transaksi berasal dari sistem real-time 3 aktor
+    PesananModel? pesananLive;
+    for (final item in RealtimeSyncService.instance.daftarPesanan) {
+      if (item.id == trx.kodeTrx) {
+        pesananLive = item;
+        break;
+      }
+    }
 
     return GestureDetector(
       // Admin bisa mengklik kartu untuk mengubah status pesanan
@@ -259,7 +308,15 @@ class _TransaksiPageState extends State<TransaksiPage> {
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Divider(height: 1, color: Color(0xFFEEEEEE)),
             ),
-            Text('${trx.jumlahKg} kg ${trx.produkId}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: darkText)),
+            Text(
+              pesananLive != null ? pesananLive.items : '${trx.jumlahKg} kg ${trx.produkId}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: darkText),
+            ),
+            if (pesananLive != null) ...[
+              const SizedBox(height: 4),
+              Text('Pembeli: ${pesananLive.customerNama}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: primarySeafoam)),
+              Text('Alamat: ${pesananLive.alamat}', style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+            ],
             const SizedBox(height: 6),
             Text('Tanggal: ${trx.tanggal}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             const SizedBox(height: 16),
@@ -268,6 +325,50 @@ class _TransaksiPageState extends State<TransaksiPage> {
               children: [
                 Text('Total Pembayaran', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
                 Text('Rp ${_formatRupiah(totalPembayaran)}', style: const TextStyle(color: accentCoral, fontWeight: FontWeight.bold, fontSize: 15)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (trx.statusBayar == 'Menunggu Konfirmasi Penjual')
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primarySeafoam,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      await RealtimeSyncService.instance.updateStatusPesanan(trx.kodeTrx, 'Siap Dijemput Kurir');
+                      if (mounted) {
+                        setState(() {});
+                        _tampilkanAlertSukses('Pesanan ${trx.kodeTrx} berhasil dikonfirmasi & ditugaskan ke Kurir!');
+                      }
+                    },
+                    icon: const Icon(Icons.local_shipping_outlined, size: 16),
+                    label: const Text('Tugaskan Kurir', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: primarySeafoam),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveMapPage(
+                          pesananId: trx.kodeTrx,
+                          roleAktor: 'admin',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.map_outlined, size: 16, color: primarySeafoam),
+                  label: const Text('Lacak Peta Kurir (Live)', style: TextStyle(fontSize: 12, color: primarySeafoam, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
           ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../service/login_service.dart';
 import 'beranda.dart';
+import 'customer/customer_beranda.dart';
+import 'kurir/kurir_beranda.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -40,21 +42,48 @@ class LoginState extends State<Login> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
+    await _eksekusiLogin(_usernameCtrl.text.trim(), _passwordCtrl.text);
+  }
+
+  Future<void> _masukPintasanAktor(String user, String pass) async {
+    FocusScope.of(context).unfocus();
+    _usernameCtrl.text = user;
+    _passwordCtrl.text = pass;
+    await _eksekusiLogin(user, pass);
+  }
+
+  Future<void> _eksekusiLogin(String username, String password) async {
     setState(() => _sedangMasuk = true);
     try {
-      final berhasil = await LoginService().login(
-        _usernameCtrl.text.trim(),
-        _passwordCtrl.text,
-      );
+      final role = await LoginService().loginWithRole(username, password);
       if (!mounted) return;
 
-      if (berhasil == true) {
+      if (role == 'admin') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const Beranda()),
         );
+      } else if (role == 'customer') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CustomerBeranda()),
+        );
+      } else if (role == 'kurir') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const KurirBeranda()),
+        );
       } else {
-        _tampilkanDialogGagal();
+        final berhasil = await LoginService().login(username, password);
+        if (!mounted) return;
+        if (berhasil == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const Beranda()),
+          );
+        } else {
+          _tampilkanDialogGagal();
+        }
       }
     } catch (_) {
       if (!mounted) return;
@@ -72,7 +101,7 @@ class LoginState extends State<Login> {
         icon: const Icon(Icons.error_outline, color: accentCoral, size: 36),
         title: const Text('Gagal Masuk'),
         content: const Text(
-          'Username atau password salah.\n(Gunakan admin / admin)',
+          'Username atau password salah.\n\nGunakan salah satu akun resmi:\n• Penjual: admin / admin\n• Pembeli: customer / customer\n• Kurir: kurir / kurir',
           textAlign: TextAlign.center,
         ),
         actions: [
@@ -91,8 +120,9 @@ class LoginState extends State<Login> {
     //   if (akun == null) return; // pengguna membatalkan
     //   ... lanjutkan autentikasi ke Firebase / backend
     _tampilkanSnackBar(
-      'Login Google akan aktif setelah google_sign_in & Firebase dikonfigurasi.',
+      'Login Google simulasi aktif: mengarahkan ke beranda Customer...',
     );
+    _masukPintasanAktor('customer', 'customer');
   }
 
   void _lupaPassword() {
@@ -181,9 +211,11 @@ class LoginState extends State<Login> {
                         ),
                         const SizedBox(height: 8),
                         _buildTombolMasuk(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
+                        _buildPintasanAktorDemo(),
+                        const SizedBox(height: 20),
                         _buildPemisah(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         _buildTombolGoogle(),
                         const SizedBox(height: 28),
                         Text(
@@ -289,7 +321,10 @@ class LoginState extends State<Login> {
       textInputAction: TextInputAction.next,
       autofillHints: const [AutofillHints.username],
       onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocus),
-      decoration: _dekorasiField(label: 'Username', ikon: Icons.person_outline),
+      decoration: _dekorasiField(
+        label: 'Username (admin / customer / kurir)',
+        ikon: Icons.person_outline,
+      ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) return 'Username wajib diisi';
         return null;
@@ -352,6 +387,65 @@ class LoginState extends State<Login> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
               ),
       ),
+    );
+  }
+
+  Widget _buildPintasanAktorDemo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Pintasan Cepat Demo 3 Aktor:',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: primarySeafoam,
+                  side: const BorderSide(color: primarySeafoam),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _sedangMasuk ? null : () => _masukPintasanAktor('customer', 'customer'),
+                icon: const Icon(Icons.shopping_bag_outlined, size: 16),
+                label: const Text('Pembeli', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: darkText,
+                  side: const BorderSide(color: darkText),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _sedangMasuk ? null : () => _masukPintasanAktor('admin', 'admin'),
+                icon: const Icon(Icons.storefront_outlined, size: 16),
+                label: const Text('Penjual', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: accentCoral,
+                  side: const BorderSide(color: accentCoral),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _sedangMasuk ? null : () => _masukPintasanAktor('kurir', 'kurir'),
+                icon: const Icon(Icons.delivery_dining_outlined, size: 16),
+                label: const Text('Kurir', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
