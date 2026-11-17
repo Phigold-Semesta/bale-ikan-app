@@ -159,78 +159,99 @@ class LoginState extends State<Login> {
   // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Dekorasi lingkaran lembut di latar
-          Positioned(
-            top: -90,
-            right: -70,
-            child: _lingkaran(260, const Color(0x1A00A896)),
-          ),
-          Positioned(
-            top: 120,
-            left: -90,
-            child: _lingkaran(160, const Color(0x14FF6B6B)),
-          ),
-          Positioned(
-            bottom: -80,
-            left: -60,
-            child: _lingkaran(220, const Color(0x14028090)),
-          ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildBrand(),
-                        const SizedBox(height: 36),
-                        _buildFieldUsername(),
-                        const SizedBox(height: 16),
-                        _buildFieldPassword(),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _lupaPassword,
-                            style: TextButton.styleFrom(
-                              foregroundColor: primarySeafoam,
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                            ),
-                            child: const Text(
-                              'Lupa password?',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+      child: SelectionContainer.disabled(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.white,
+            child: Stack(
+              children: [
+                // Dekorasi lingkaran lembut di latar
+                Positioned(
+                  top: -90,
+                  right: -70,
+                  child: IgnorePointer(
+                    child: _lingkaran(260, const Color(0x1A00A896)),
+                  ),
+                ),
+                Positioned(
+                  top: 120,
+                  left: -90,
+                  child: IgnorePointer(
+                    child: _lingkaran(160, const Color(0x14FF6B6B)),
+                  ),
+                ),
+                Positioned(
+                  bottom: -80,
+                  left: -60,
+                  child: IgnorePointer(
+                    child: _lingkaran(220, const Color(0x14028090)),
+                  ),
+                ),
+                SafeArea(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildBrand(),
+                              const SizedBox(height: 36),
+                              _buildFieldUsername(),
+                              const SizedBox(height: 16),
+                              _buildFieldPassword(),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: _lupaPassword,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: primarySeafoam,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  ),
+                                  child: const Text(
+                                    'Lupa password?',
+                                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _buildTombolMasuk(),
+                              const SizedBox(height: 18),
+                              _buildPintasanAktorDemo(),
+                              const SizedBox(height: 20),
+                              _buildPemisah(),
+                              const SizedBox(height: 20),
+                              _buildTombolGoogle(),
+                              const SizedBox(height: 28),
+                              Text(
+                                'Dengan masuk, kamu menyetujui Syarat & Ketentuan\ndan Kebijakan Privasi Bale Ikan.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 11, height: 1.5, color: Colors.grey[500]),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        _buildTombolMasuk(),
-                        const SizedBox(height: 18),
-                        _buildPintasanAktorDemo(),
-                        const SizedBox(height: 20),
-                        _buildPemisah(),
-                        const SizedBox(height: 20),
-                        _buildTombolGoogle(),
-                        const SizedBox(height: 28),
-                        Text(
-                          'Dengan masuk, kamu menyetujui Syarat & Ketentuan\ndan Kebijakan Privasi Bale Ikan.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, height: 1.5, color: Colors.grey[500]),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
