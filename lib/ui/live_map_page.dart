@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../model/pesanan_model.dart';
-import '../service/realtime_sync_service.dart';
+import 'package:bale_ikan_app/model/pesanan_model.dart'; // DIPERBAIKI: sebelumnya '../model/pesanan_model.dart'
+import 'package:bale_ikan_app/service/realtime_sync_service.dart'; // DIPERBAIKI: sebelumnya '../service/realtime_sync_service.dart'
 
 class LiveMapPage extends StatelessWidget {
   final String pesananId;

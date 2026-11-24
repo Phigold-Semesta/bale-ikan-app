@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart'; // Untuk mengecek Web / Desktop (kIsWeb)
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Package untuk buka folder laptop/HP
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../model/produk_ikan.dart';
-import '../service/produk_service.dart';
-import '../service/realtime_sync_service.dart';
-import 'beranda.dart';
-import 'produk_detail.dart';
+import 'package:bale_ikan_app/model/produk_ikan.dart';
+import 'package:bale_ikan_app/service/produk_service.dart';
+import 'package:bale_ikan_app/service/realtime_sync_service.dart';
+import 'admin_beranda.dart';
+import 'admin_produk_detail.dart';
 
 class ProdukItem extends StatelessWidget {
   final ProdukIkan produk;

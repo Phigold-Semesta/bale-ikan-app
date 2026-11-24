@@ -1,15 +1,15 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart'; // Ditambahkan untuk pengecekan platform web
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Ditambahkan untuk akses folder/galeri
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../model/produk_ikan.dart';
-import '../service/produk_service.dart';
-import '../service/realtime_sync_service.dart';
-import 'produk_page.dart';
-import 'produk_update_form.dart';
-import 'beranda.dart'; // Ditambahkan untuk navigasi hapus data
+import 'package:bale_ikan_app/model/produk_ikan.dart';
+import 'package:bale_ikan_app/service/produk_service.dart';
+import 'package:bale_ikan_app/service/realtime_sync_service.dart';
+import 'admin_produk_page.dart';
+import 'admin_produk_update_form.dart';
+import 'admin_beranda.dart';
 
 class ProdukDetail extends StatefulWidget {
   final ProdukIkan produk;

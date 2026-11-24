@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../model/produk_ikan.dart';
-import '../service/produk_service.dart';
-import 'produk_item.dart';
-import 'produk_form.dart';
+import 'package:bale_ikan_app/model/produk_ikan.dart';
+import 'package:bale_ikan_app/service/produk_service.dart';
+import 'admin_produk_item.dart';
+import 'admin_produk_form.dart';
 
 class ProdukPage extends StatefulWidget {
   /// Dua parameter ini opsional dan dipertahankan agar pemanggil lama

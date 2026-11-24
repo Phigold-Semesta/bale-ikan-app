@@ -77,6 +77,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           contentPadding: const EdgeInsets.all(24),
           content: Column(
@@ -97,6 +99,7 @@ class _CustomerProfilState extends State<CustomerProfil> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primarySeafoam,
+                    surfaceTintColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
@@ -133,6 +136,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
               controller: namaCtrl,
               decoration: InputDecoration(
                 labelText: 'Nama Lengkap',
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -141,6 +146,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
               controller: emailCtrl,
               decoration: InputDecoration(
                 labelText: 'Email',
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -148,6 +155,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primarySeafoam,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -193,6 +202,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
               maxLines: 2,
               decoration: InputDecoration(
                 labelText: 'Alamat Lengkap di Karawang',
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -200,6 +211,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primarySeafoam,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -240,6 +253,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Kata Sandi Baru',
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -247,6 +262,8 @@ class _CustomerProfilState extends State<CustomerProfil> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primarySeafoam,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -268,6 +285,7 @@ class _CustomerProfilState extends State<CustomerProfil> {
       backgroundColor: lightBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Profil Akun', style: TextStyle(color: darkText, fontWeight: FontWeight.bold, fontSize: 18)),
@@ -327,22 +345,27 @@ class _CustomerProfilState extends State<CustomerProfil> {
               child: Column(
                 children: [
                   ListTile(
+                    tileColor: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
                     leading: const Icon(Icons.person_outline, color: primarySeafoam),
-                    title: const Text('Edit Profil'),
+                    title: const Text('Edit Profil', style: TextStyle(color: darkText)),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                     onTap: _bukaModalEditProfil,
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    tileColor: Colors.white,
                     leading: const Icon(Icons.location_on_outlined, color: primarySeafoam),
-                    title: const Text('Alamat Pengiriman'),
+                    title: const Text('Alamat Pengiriman', style: TextStyle(color: darkText)),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                     onTap: _bukaModalAlamat,
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    tileColor: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(16))),
                     leading: const Icon(Icons.lock_outline, color: primarySeafoam),
-                    title: const Text('Keamanan & Sandi'),
+                    title: const Text('Keamanan & Sandi', style: TextStyle(color: darkText)),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                     onTap: _bukaModalSandi,
                   ),
@@ -355,6 +378,7 @@ class _CustomerProfilState extends State<CustomerProfil> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentCoral,
+                  surfaceTintColor: Colors.transparent,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

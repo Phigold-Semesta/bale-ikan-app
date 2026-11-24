@@ -153,6 +153,7 @@ class _CustomerBerandaState extends State<CustomerBeranda> {
         drawer: _buildSidebarCustomer(context),
         appBar: AppBar(
           backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
           centerTitle: false,
           titleSpacing: 0,
@@ -212,6 +213,8 @@ class _CustomerBerandaState extends State<CustomerBeranda> {
         body: pages[_selectedIndex],
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
+          backgroundColor: Colors.white,
+          elevation: 8,
           selectedItemColor: primarySeafoam,
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
@@ -238,6 +241,7 @@ class _CustomerBerandaState extends State<CustomerBeranda> {
   Widget _buildSidebarCustomer(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
       child: Column(
         children: [
           Container(

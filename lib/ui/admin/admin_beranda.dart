@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../widget/sidebar.dart';
-import '../service/produk_service.dart';
-import '../model/produk_ikan.dart';
-import 'produk_page.dart';
-import 'transaksi_page.dart';
-import 'profil_page.dart';
-import 'produk_item.dart';
+import 'package:bale_ikan_app/widget/sidebar.dart';
+import 'package:bale_ikan_app/service/produk_service.dart';
+import 'package:bale_ikan_app/model/produk_ikan.dart';
+import 'admin_produk_page.dart';
+import 'admin_transaksi.dart';
+import 'admin_profil.dart';
+import 'admin_produk_item.dart';
 
 class Beranda extends StatefulWidget {
   const Beranda({super.key});

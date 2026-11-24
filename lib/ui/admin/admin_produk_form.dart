@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../model/produk_ikan.dart';
-import '../service/produk_service.dart';
-import 'beranda.dart';
+import 'package:bale_ikan_app/model/produk_ikan.dart';
+import 'package:bale_ikan_app/service/produk_service.dart';
+import 'admin_beranda.dart';
 
 class ProdukForm extends StatefulWidget {
   const ProdukForm({super.key});

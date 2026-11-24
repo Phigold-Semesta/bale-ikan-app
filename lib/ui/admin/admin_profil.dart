@@ -1,12 +1,13 @@
 import 'dart:io';
+import 'dart:typed_data'; // DITAMBAHKAN: Uint8List dipakai di file ini, import eksplisit agar aman di semua platform
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../helpers/user_info.dart';
-import '../model/profil_pengguna.dart';
-import '../service/profil_service.dart';
-import '../service/realtime_sync_service.dart';
-import 'login.dart';
+import 'package:bale_ikan_app/helpers/user_info.dart'; // DIPERBAIKI: sebelumnya '../helpers/user_info.dart'
+import 'package:bale_ikan_app/model/profil_pengguna.dart'; // DIPERBAIKI: sebelumnya '../model/profil_pengguna.dart'
+import 'package:bale_ikan_app/service/profil_service.dart'; // DIPERBAIKI: sebelumnya '../service/profil_service.dart'
+import 'package:bale_ikan_app/service/realtime_sync_service.dart'; // DIPERBAIKI: sebelumnya '../service/realtime_sync_service.dart'
+import 'package:bale_ikan_app/ui/login.dart'; // DIPERBAIKI: sebelumnya 'login.dart' (file ada di lib/ui/, bukan lib/ui/admin/)
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});

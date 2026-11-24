@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../service/login_service.dart';
-import 'beranda.dart';
+import 'admin/admin_beranda.dart';
 import 'customer/customer_beranda.dart';
 import 'kurir/kurir_beranda.dart';
 
